@@ -1,0 +1,43 @@
+name: Testes automatizados
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  robot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Rodar testes de API
+        run: robot --outputdir results/api tests/api
+
+      - name: Rodar testes web (Chrome headless)
+        if: always()
+        run: robot --outputdir results/web tests/web
+
+      - name: Publicar relatórios
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorios-robot
+          path: results/
+
+  postman:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Rodar coleção Postman com Newman
+        run: npx --yes newman@6.2.1 run postman/restful-booker.postman_collection.json
